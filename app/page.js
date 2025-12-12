@@ -95,31 +95,14 @@ export default function PortfolioHome() {
 
 function ChatAssistant() {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState(() => {
-    // load from localStorage if exists
-    try {
-      const raw = typeof window !== "undefined" && window.localStorage.getItem("chat_messages_v1");
-      return raw ? JSON.parse(raw) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-
-  // persist messages to localStorage
-  useEffect(() => {
-    try {
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem("chat_messages_v1", JSON.stringify(messages));
-      }
-    } catch {}
-  }, [messages]);
 
   const sendMessage = async () => {
     if (!input.trim()) return;
 
-    const userMsg = { role: "user", content: input, ts: Date.now() };
+    const userMsg = { role: "user", content: input };
     setMessages(prev => [...prev, userMsg]);
     setInput("");
     setLoading(true);
@@ -131,73 +114,67 @@ function ChatAssistant() {
         body: JSON.stringify({ userMessage: userMsg.content }),
       });
 
-      if (!res.ok) {
-        throw new Error("Network error");
-      }
-
       const data = await res.json();
-      const assistantMsg = { role: "assistant", content: data.reply ?? "Sorry, no response.", ts: Date.now() };
+      const assistantMsg = { role: "assistant", content: data.reply };
 
       setMessages(prev => [...prev, assistantMsg]);
-    } catch (err) {
+    } catch {
       setMessages(prev => [
         ...prev,
-        { role: "assistant", content: "⚠️ Error contacting assistant. Try again later.", ts: Date.now() }
+        { role: "assistant", content: "⚠️ Error contacting assistant." }
       ]);
     }
 
     setLoading(false);
   };
 
-  // Enter to send
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  };
-
   return (
     <>
-      {/* Floating bubble */}
+      {/* Floating chat icon */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        aria-label="Open AI assistant"
-        className="fixed bottom-6 right-6 bg-gray-900 text-white p-4 rounded-full shadow-xl hover:scale-110 transition-transform z-[9999]"
+        className="fixed bottom-6 right-6 bg-gray-900 text-white p-4 rounded-full shadow-xl hover:scale-110 transition-transform z-[999999]"
       >
-        💬
+        <svg className="w-6 h-6" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M7 8h10M7 12h6m1 8l-4-4H7a4 4 0 01-4-4V7a4 4 0 014-4h10a4 4 0 014 4v5a4 4 0 01-4 4h-1l-4 4z"
+          />
+        </svg>
       </button>
 
       {/* Chat window */}
       {isOpen && (
-        <div className="fixed bottom-20 right-6 w-80 md:w-96 bg-white border border-gray-300 rounded-lg shadow-xl p-4 z-[9999] animate-fadeIn">
+        <div className="fixed bottom-20 right-6 w-80 bg-white border border-gray-300 rounded-lg shadow-xl p-4 z-[999999] animate-fadeIn">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-lg font-semibold">AI Assistant</h3>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => {
-                  setMessages([]);
-                  try { localStorage.removeItem("chat_messages_v1"); } catch {}
-                }}
-                className="text-sm text-gray-500 hover:text-gray-700"
-                title="Clear chat"
-              >
-                Clear
-              </button>
-              <button onClick={() => setIsOpen(false)} className="text-gray-500 hover:text-gray-700">✕</button>
-            </div>
+
+            {/* Close button */}
+            <button
+              onClick={() => setIsOpen(false)}
+              className="text-gray-500 hover:text-gray-700 text-xl"
+            >
+              ×
+            </button>
           </div>
 
-          <div className="h-64 overflow-y-auto mb-3 border p-3 rounded-md space-y-2 bg-white" id="chat-scroll">
+          {/* Chat Messages */}
+          <div className="h-64 overflow-y-auto mb-3 border p-3 rounded-md space-y-2 bg-white">
             {messages.length === 0 && (
-              <div className="text-sm text-gray-500 italic">Hi — ask me anything about Nikhil's resume, skills, or projects.</div>
+              <div className="text-sm text-gray-500 italic">Ask me anything about Nikhil's skills, resume or projects.</div>
             )}
 
             {messages.map((m, i) => (
-              <div key={i} className="w-full flex">
-                <div className={`p-2 rounded-md ${m.role === "user" ? "ml-auto bg-gray-900 text-white" : "mr-auto bg-gray-100 text-gray-900" } max-w-[85%]`}>
-                  {m.content}
-                </div>
+              <div
+                key={i}
+                className={`p-2 rounded-md ${
+                  m.role === "user"
+                    ? "bg-gray-900 text-white ml-auto max-w-[80%]"
+                    : "bg-gray-100 text-gray-900 mr-auto max-w-[80%]"
+                }`}
+              >
+                {m.content}
               </div>
             ))}
 
@@ -208,18 +185,15 @@ function ChatAssistant() {
 
           {/* Input */}
           <div className="flex gap-2">
-            <textarea
+            <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="flex-grow p-2 border rounded-md resize-none h-10"
+              className="flex-grow p-2 border rounded-md"
               placeholder="Ask something..."
-              aria-label="Ask assistant"
             />
             <button
               onClick={sendMessage}
-              disabled={loading}
-              className="px-4 bg-gray-900 text-white rounded-md hover:bg-gray-800 disabled:opacity-60"
+              className="px-4 bg-gray-900 text-white rounded-md hover:bg-gray-800"
             >
               Send
             </button>
@@ -229,6 +203,7 @@ function ChatAssistant() {
     </>
   );
 }
+
 
 //////////////////////////////////////////////////////////
 //                   HOME PAGE                          //
