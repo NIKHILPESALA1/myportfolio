@@ -111,12 +111,7 @@ export default function PortfolioHome() {
         {currentPage === "contact" && <ContactPage />}
       </div>
 
-      {/* FOOTER */}
-      <footer className="py-8 px-8 border-t border-gray-200">
-        <div className="max-w-3xl mx-auto text-center text-sm text-gray-600">
-          <p>© 2024 Nikhil Pesala. All rights reserved.</p>
-        </div>
-      </footer>
+
 
       {/* FLOATING AI CHAT ASSISTANT */}
       <ChatAssistant />
