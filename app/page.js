@@ -127,21 +127,21 @@ function ChatAssistant() {
     <>
       {/* Floating chat icon */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-8 right-8 bg-gray-900 text-white p-4 rounded-full shadow-xl hover:scale-110 transition-transform z-[999999]"
-      >
-        <svg className="w-6 h-6" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M7 8h10M7 12h6m1 8l-4-4H7a4 4 0 01-4-4V7a4 4 0 014-4h10a4 4 0 014 4v5a4 4 0 01-4 4h-1l-4 4z"
-          />
-        </svg>
-      </button>
+  onClick={() => setIsOpen(!isOpen)}
+  className="fixed bottom-16 right-10 bg-gray-900 text-white p-4 rounded-full shadow-xl hover:scale-110 transition-transform z-[999999]"
+>
+  <svg className="w-6 h-6" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24">
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M7 8h10M7 12h6m1 8l-4-4H7a4 4 0 01-4-4V7a4 4 0 014-4h10a4 4 0 014 4v5a4 4 0 01-4 4h-1l-4 4z"
+    />
+  </svg>
+</button>
 
-      {/* Chat window */}
-      {isOpen && (
-        <div className="fixed bottom-28 right-8 w-80 bg-white border border-gray-300 rounded-lg shadow-xl p-4 z-[999999] animate-fadeIn">
+{isOpen && (
+  <div className="fixed bottom-40 right-10 w-80 bg-white border border-gray-300 rounded-lg shadow-xl p-4 z-[999999] animate-fadeIn">
+
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-lg font-semibold">AI Assistant</h3>
             <button
