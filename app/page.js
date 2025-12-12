@@ -115,14 +115,9 @@ function ChatAssistant() {
       });
 
       const data = await res.json();
-      const assistantMsg = { role: "assistant", content: data.reply };
-
-      setMessages(prev => [...prev, assistantMsg]);
+      setMessages(prev => [...prev, { role: "assistant", content: data.reply }]);
     } catch {
-      setMessages(prev => [
-        ...prev,
-        { role: "assistant", content: "⚠️ Error contacting assistant." }
-      ]);
+      setMessages(prev => [...prev, { role: "assistant", content: "⚠️ Error contacting assistant." }]);
     }
 
     setLoading(false);
@@ -133,7 +128,7 @@ function ChatAssistant() {
       {/* Floating chat icon */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-0 right-8 bg-gray-900 text-white p-4 rounded-full shadow-xl hover:scale-110 transition-transform z-[999999]"
+        className="fixed bottom-8 right-8 bg-gray-900 text-white p-4 rounded-full shadow-xl hover:scale-110 transition-transform z-[999999]"
       >
         <svg className="w-6 h-6" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24">
           <path
@@ -146,11 +141,9 @@ function ChatAssistant() {
 
       {/* Chat window */}
       {isOpen && (
-        <div className="fixed bottom-20 right-6 w-80 bg-white border border-gray-300 rounded-lg shadow-xl p-4 z-[999999] animate-fadeIn">
+        <div className="fixed bottom-28 right-8 w-80 bg-white border border-gray-300 rounded-lg shadow-xl p-4 z-[999999] animate-fadeIn">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-lg font-semibold">AI Assistant</h3>
-
-            {/* Close button */}
             <button
               onClick={() => setIsOpen(false)}
               className="text-gray-500 hover:text-gray-700 text-xl"
@@ -159,12 +152,7 @@ function ChatAssistant() {
             </button>
           </div>
 
-          {/* Chat Messages */}
           <div className="h-64 overflow-y-auto mb-3 border p-3 rounded-md space-y-2 bg-white">
-            {messages.length === 0 && (
-              <div className="text-sm text-gray-500 italic">Ask me anything about Nikhil's skills, resume or projects.</div>
-            )}
-
             {messages.map((m, i) => (
               <div
                 key={i}
@@ -178,12 +166,9 @@ function ChatAssistant() {
               </div>
             ))}
 
-            {loading && (
-              <div className="text-sm text-gray-500 italic">Assistant is typing...</div>
-            )}
+            {loading && <div className="text-sm text-gray-500 italic">Assistant is typing...</div>}
           </div>
 
-          {/* Input */}
           <div className="flex gap-2">
             <input
               value={input}
@@ -203,6 +188,7 @@ function ChatAssistant() {
     </>
   );
 }
+
 
 
 //////////////////////////////////////////////////////////
