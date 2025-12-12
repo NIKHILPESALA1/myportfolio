@@ -68,7 +68,7 @@ export default function PortfolioHome() {
       </nav>
 
       {/* PAGE TRANSITION WRAPPER */}
-      <div className={`transition-all duration-300 ${isTransitioning ? "opacity-0 translate-y-4" : "opacity-100 translate-y-0"}`}>
+      <div className={`transition-all duration-300 z-0 relative ${isTransitioning ? "opacity-0 translate-y-4" : "opacity-100 translate-y-0"}`}>
         {currentPage === "home" && <HomePage navigateTo={navigateTo} />}
         {currentPage === "about" && <AboutPage />}
         {currentPage === "projects" && <ProjectsPage />}
