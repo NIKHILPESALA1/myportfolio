@@ -133,7 +133,7 @@ function ChatAssistant() {
       {/* Floating chat icon */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-3 right-8 bg-gray-900 text-white p-4 rounded-full shadow-xl hover:scale-110 transition-transform z-[999999]"
+        className="fixed bottom-0 right-8 bg-gray-900 text-white p-4 rounded-full shadow-xl hover:scale-110 transition-transform z-[999999]"
       >
         <svg className="w-6 h-6" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24">
           <path
