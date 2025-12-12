@@ -1,9 +1,9 @@
 'use client';
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 /**
  * Full portfolio page with expanded About, Projects, Skills, Contact
- * and the floating ChatAssistant integrated.
+ * and the upgraded draggable ChatAssistant integrated.
  *
  * Paste this whole file into your Next.js page (e.g. app/page.jsx) and it should run.
  * Make sure Tailwind CSS is enabled in your project for the classes to work.
@@ -13,7 +13,7 @@ export default function PortfolioHome() {
   const [currentPage, setCurrentPage] = useState("home");
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-  // Inject custom keyframe animations (client-side only)
+  // Inject custom keyframe animations + typing dots CSS (client-side only)
   useEffect(() => {
     const style = document.createElement("style");
     style.textContent = `
@@ -26,6 +26,41 @@ export default function PortfolioHome() {
       .animate-slideDown{animation:slideDown .6s ease-out forwards}
       .animate-slideRight{animation:slideRight .6s ease-out forwards}
       .animate-slideLeft{animation:slideLeft .6s ease-out forwards}
+
+      @keyframes fadeInSlow {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .animate-fadeInSlow { animation: fadeInSlow 0.45s ease-out forwards; }
+
+      @keyframes bounceSlow {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-4px); }
+      }
+      .animate-bounce-slow { animation: bounceSlow 2.5s infinite ease-in-out; }
+
+      .typing-dots { display: inline-flex; gap: 6px; align-items:center; }
+      .typing-dots .dot {
+        width: 7px;
+        height: 7px;
+        background: #9CA3AF;
+        border-radius: 50%;
+        display:inline-block;
+        animation: blink 1.2s infinite both;
+      }
+      .typing-dots .dot:nth-child(2) { animation-delay: 0.15s; }
+      .typing-dots .dot:nth-child(3) { animation-delay: 0.3s; }
+
+      @keyframes blink {
+        0% { opacity: .2; transform: translateY(0); }
+        20% { opacity: 1; transform: translateY(-2px); }
+        100% { opacity: .2; transform: translateY(0); }
+      }
+
+      /* small responsive tweak */
+      @media (max-width: 640px) {
+        .chat-panel-mobile { right: 1rem !important; left: 1rem !important; width: calc(100% - 2rem) !important; bottom: 6rem !important; }
+      }
     `;
     document.head.appendChild(style);
     return () => document.head.removeChild(style);
@@ -99,51 +134,151 @@ function ChatAssistant() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const sendMessage = async () => {
-    if (!input.trim()) return;
+  const chatRef = useRef(null);
+  const scrollRef = useRef(null);
+  const dragOffset = useRef({ offsetX: 0, offsetY: 0 });
+  const isDragging = useRef(false);
 
-    const userMsg = { role: "user", content: input };
-    setMessages(prev => [...prev, userMsg]);
-    setInput("");
+  // Auto-scroll
+  useEffect(() => {
+    const c = scrollRef.current;
+    if (c) c.scrollTop = c.scrollHeight;
+  }, [messages, loading]);
+
+  // Drag start
+  const startDrag = (e) => {
+    if (!chatRef.current) return;
+
+    isDragging.current = true;
+
+    const rect = chatRef.current.getBoundingClientRect();
+    dragOffset.current.offsetX = e.clientX - rect.left;
+    dragOffset.current.offsetY = e.clientY - rect.top;
+
+    chatRef.current.style.left = `${rect.left}px`;
+    chatRef.current.style.top = `${rect.top}px`;
+    chatRef.current.style.right = "auto";
+    chatRef.current.style.bottom = "auto";
+
+    document.addEventListener("mousemove", moveDrag);
+    document.addEventListener("mouseup", stopDrag);
+  };
+
+  const moveDrag = (e) => {
+    if (!isDragging.current || !chatRef.current) return;
+
+    let x = e.clientX - dragOffset.current.offsetX;
+    let y = e.clientY - dragOffset.current.offsetY;
+
+    // Prevent dragging outside viewport
+    x = Math.max(10, Math.min(window.innerWidth - 350, x));
+    y = Math.max(10, Math.min(window.innerHeight - 100, y));
+
+    chatRef.current.style.left = `${x}px`;
+    chatRef.current.style.top = `${y}px`;
+  };
+
+  const stopDrag = () => {
+    isDragging.current = false;
+    document.removeEventListener("mousemove", moveDrag);
+    document.removeEventListener("mouseup", stopDrag);
+  };
+
+  const sendMessage = async (preset) => {
+    const text = preset || input;
+    if (!text.trim()) return;
+
+    setMessages((prev) => [...prev, { role: "user", content: text }]);
+    if (!preset) setInput("");
     setLoading(true);
 
     try {
-      const res = await fetch("https://kundu.app.n8n.cloud/webhook/portfolio-assistant", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userMessage: userMsg.content }),
-      });
+      const res = await fetch(
+        "https://kundu.app.n8n.cloud/webhook/portfolio-assistant",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userMessage: text }),
+        }
+      );
 
-      const data = await res.json();
-      setMessages(prev => [...prev, { role: "assistant", content: data.reply }]);
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        data = { reply: await res.text() };
+      }
+
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: data?.reply ?? "No response." },
+      ]);
     } catch {
-      setMessages(prev => [...prev, { role: "assistant", content: "⚠️ Error contacting assistant." }]);
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: "⚠️ Error contacting assistant." },
+      ]);
     }
 
     setLoading(false);
   };
 
+  const handleKey = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
+
+  const quickPrompts = [
+    "Tell me about Nikhil's projects",
+    "What skills does Nikhil have?",
+    "Is Nikhil suitable for cloud or DevOps roles?",
+    "Give a summary of his resume",
+  ];
+
   return (
     <>
-      {/* Floating chat icon */}
+      {/* Floating Button */}
       <button
-  onClick={() => setIsOpen(!isOpen)}
-  className="fixed bottom-16 right-10 bg-gray-900 text-white p-4 rounded-full shadow-xl hover:scale-110 transition-transform z-[999999]"
->
-  <svg className="w-6 h-6" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24">
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M7 8h10M7 12h6m1 8l-4-4H7a4 4 0 01-4-4V7a4 4 0 014-4h10a4 4 0 014 4v5a4 4 0 01-4 4h-1l-4 4z"
-    />
-  </svg>
-</button>
+        onClick={() => setIsOpen((p) => !p)}
+        className="fixed bottom-8 right-8 bg-gray-900 text-white p-4 rounded-full shadow-xl hover:scale-110 transition animate-bounce-slow z-[999999]"
+      >
+        💬
+      </button>
 
-{isOpen && (
-  <div className="fixed bottom-40 right-10 w-80 bg-white border border-gray-300 rounded-lg shadow-xl p-4 z-[999999] animate-fadeIn">
-
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-semibold">AI Assistant</h3>
+      {/* CHAT WINDOW */}
+      {isOpen && (
+        <div
+          ref={chatRef}
+          className="
+            fixed
+            bottom-28 right-8
+            w-[420px]
+            max-h-[80vh]
+            bg-white/90 backdrop-blur-xl
+            border border-gray-300 rounded-2xl shadow-2xl
+            p-5 flex flex-col
+            overflow-hidden
+            animate-fadeInSlow
+            chat-panel-mobile
+            z-[999999]
+          "
+        >
+          {/* Header */}
+          <div
+            onMouseDown={startDrag}
+            className="cursor-move flex justify-between items-center pb-3 border-b border-gray-300"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gray-900 text-white rounded-full flex items-center justify-center">
+                🤖
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold">AI Assistant</h3>
+                <p className="text-xs text-gray-500">Ask anything about Nikhil</p>
+              </div>
+            </div>
             <button
               onClick={() => setIsOpen(false)}
               className="text-gray-500 hover:text-gray-700 text-xl"
@@ -152,33 +287,82 @@ function ChatAssistant() {
             </button>
           </div>
 
-          <div className="h-64 overflow-y-auto mb-3 border p-3 rounded-md space-y-2 bg-white">
+          {/* Quick Prompts */}
+          {messages.length === 0 && (
+            <div className="my-4">
+              <p className="text-sm text-gray-600 mb-2">Try asking:</p>
+              <div className="grid gap-2">
+                {quickPrompts.map((p, i) => (
+                  <button
+                    key={i}
+                    onClick={() => sendMessage(p)}
+                    className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-md text-left"
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Messages */}
+          <div
+            ref={scrollRef}
+            className="flex-1 min-h-0 overflow-y-auto pr-2 space-y-3 py-2"
+          >
             {messages.map((m, i) => (
-              <div
-                key={i}
-                className={`p-2 rounded-md ${
-                  m.role === "user"
-                    ? "bg-gray-900 text-white ml-auto max-w-[80%]"
-                    : "bg-gray-100 text-gray-900 mr-auto max-w-[80%]"
-                }`}
-              >
-                {m.content}
+              <div key={i} className={`flex items-start gap-3 ${m.role === "user" ? "justify-end" : ""}`}>
+                {m.role === "assistant" && (
+                  <div className="w-9 h-9 bg-gray-900 rounded-full text-white flex items-center justify-center">
+                    🤖
+                  </div>
+                )}
+
+                <div
+                  className={`p-3 rounded-xl max-w-[75%] ${
+                    m.role === "user" ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-900"
+                  }`}
+                >
+                  {m.content}
+                </div>
+
+                {m.role === "user" && (
+                  <div className="w-9 h-9 bg-blue-600 rounded-full text-white flex items-center justify-center">
+                    🧑
+                  </div>
+                )}
               </div>
             ))}
 
-            {loading && <div className="text-sm text-gray-500 italic">Assistant is typing...</div>}
+            {loading && (
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 bg-gray-900 text-white rounded-full flex items-center justify-center">
+                  🤖
+                </div>
+                <div className="px-3 py-2 bg-gray-200 rounded-xl">
+                  <span className="typing-dots">
+                    <span className="dot"></span>
+                    <span className="dot"></span>
+                    <span className="dot"></span>
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="flex gap-2">
-            <input
+          {/* Input */}
+          <div className="flex gap-2 pt-2">
+            <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              className="flex-grow p-2 border rounded-md"
-              placeholder="Ask something..."
+              onKeyDown={handleKey}
+              rows={1}
+              className="flex-grow p-3 border border-gray-300 rounded-xl resize-none focus:ring-2 focus:ring-gray-800 outline-none"
+              placeholder="Ask something… (Enter to send)"
             />
             <button
-              onClick={sendMessage}
-              className="px-4 bg-gray-900 text-white rounded-md hover:bg-gray-800"
+              onClick={() => sendMessage()}
+              className="px-5 py-2 bg-gray-900 text-white rounded-xl hover:bg-gray-700 shadow"
             >
               Send
             </button>
@@ -188,7 +372,6 @@ function ChatAssistant() {
     </>
   );
 }
-
 
 
 //////////////////////////////////////////////////////////
