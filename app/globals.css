@@ -2,17 +2,35 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Base */
-html, body {
-  background: #f8fafc;
-  color: #0f172a;
+html {
+  scroll-behavior: smooth;
 }
 
-/* Smooth floating animation */
-@keyframes bounceSlow {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-4px); }
+body {
+  @apply bg-[#0b0f19] text-gray-200 antialiased;
 }
-.animate-bounce-slow {
-  animation: bounceSlow 2.5s infinite ease-in-out;
+
+/* Typography */
+h1, h2, h3 {
+  @apply text-white tracking-tight;
+}
+
+/* Subtle section spacing */
+section {
+  @apply py-24;
+}
+
+/* Card system */
+.card {
+  @apply bg-[#111827] border border-gray-800 rounded-xl p-6
+         transition-all duration-300;
+}
+
+.card:hover {
+  @apply border-indigo-500/40;
+}
+
+/* Accent */
+.gradient-text {
+  @apply bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent;
 }
