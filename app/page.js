@@ -16,7 +16,7 @@ export default function PortfolioHome() {
   // Inject custom keyframe animations + typing dots CSS (client-side only)
   useEffect(() => {
     const style = document.createElement("style");
-    style.textContent = 
+    style.textContent = `
       @keyframes fadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
       @keyframes slideDown{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
       @keyframes slideRight{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
@@ -61,7 +61,7 @@ export default function PortfolioHome() {
       @media (max-width: 640px) {
         .chat-panel-mobile { right: 1rem !important; left: 1rem !important; width: calc(100% - 2rem) !important; bottom: 6rem !important; }
       }
-    ;
+    `;
     document.head.appendChild(style);
     return () => document.head.removeChild(style);
   }, []);
@@ -78,7 +78,7 @@ export default function PortfolioHome() {
   const NavLink = ({ page, label }) => (
     <button
       onClick={() => navigateTo(page)}
-      className={transition-colors ${currentPage === page ? "text-gray-900 font-semibold" : "text-gray-600 hover:text-gray-900"}}
+      className={`transition-colors ${currentPage === page ? "text-gray-900 font-semibold" : "text-gray-600 hover:text-gray-900"}`}
     >
       {label}
     </button>
@@ -103,7 +103,7 @@ export default function PortfolioHome() {
       </nav>
 
       {/* PAGE TRANSITION WRAPPER */}
-      <div className={transition-all duration-300 z-0 relative ${isTransitioning ? "opacity-0 translate-y-4" : "opacity-100 translate-y-0"}}>
+      <div className={`transition-all duration-300 z-0 relative ${isTransitioning ? "opacity-0 translate-y-4" : "opacity-100 translate-y-0"}`}>
         {currentPage === "home" && <HomePage navigateTo={navigateTo} />}
         {currentPage === "about" && <AboutPage />}
         {currentPage === "projects" && <ProjectsPage />}
@@ -161,8 +161,8 @@ function ChatAssistant() {
 
       const { x, y } = clampPosition(initialX, initialY);
 
-      chatRef.current.style.left = ${x}px;
-      chatRef.current.style.top = ${y}px;
+      chatRef.current.style.left = `${x}px`;
+      chatRef.current.style.top = `${y}px`;
       chatRef.current.style.right = "auto";
       chatRef.current.style.bottom = "auto";
     }
@@ -189,8 +189,8 @@ function ChatAssistant() {
 
     const { x, y } = clampPosition(rawX, rawY);
 
-    chatRef.current.style.left = ${x}px;
-    chatRef.current.style.top = ${y}px;
+    chatRef.current.style.left = `${x}px`;
+    chatRef.current.style.top = `${y}px`;
   };
 
   const stopDrag = () => {
@@ -275,11 +275,11 @@ function ChatAssistant() {
             {messages.map((m, i) => (
               <div
                 key={i}
-                className={max-w-[75%] p-3 rounded-xl ${
+                className={`max-w-[75%] p-3 rounded-xl ${
                   m.role === "user"
                     ? "ml-auto bg-gray-900 text-white"
                     : "bg-gray-100"
-                }}
+                }`}
               >
                 {m.content}
               </div>
@@ -470,7 +470,7 @@ function ProjectsPage() {
             <div
               key={i}
               className="bg-white border border-gray-200 rounded-lg p-8 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 animate-fadeIn"
-              style={{ animationDelay: ${i * 120}ms }}
+              style={{ animationDelay: `${i * 120}ms` }}
             >
               <div className="flex justify-between items-start mb-3">
                 <h3 className="text-2xl font-semibold">{p.title}</h3>
@@ -521,7 +521,7 @@ function SkillsPage() {
             <div
               key={i}
               className="p-8 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-lg transition-all duration-300 animate-fadeIn"
-              style={{ animationDelay: ${i * 120}ms }}
+              style={{ animationDelay: `${i * 120}ms` }}
             >
               <h3 className="text-xl font-semibold mb-4">{g.cat}</h3>
               <div className="flex flex-wrap gap-2">
@@ -599,7 +599,7 @@ function TimelineItem({ title, place, detail, bold }) {
     <div className="border-l-4 border-gray-400 pl-6 mb-6">
       <h4 className="text-xl font-semibold">{title}</h4>
       <p className="text-gray-600">{place}</p>
-      <p className={font-semibold ${bold ? "text-gray-900" : "text-gray-700"}}>{detail}</p>
+      <p className={`font-semibold ${bold ? "text-gray-900" : "text-gray-700"}`}>{detail}</p>
     </div>
   );
 }
@@ -641,7 +641,7 @@ function SocialBtn({ label, href, bg }) {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className={px-4 py-2 ${bg} text-white rounded-md hover:opacity-90 transition-all transform hover:scale-105 text-sm font-medium}
+      className={`px-4 py-2 ${bg} text-white rounded-md hover:opacity-90 transition-all transform hover:scale-105 text-sm font-medium`}
     >
       {label}
     </a>
@@ -706,4 +706,4 @@ function LocationIcon() {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11a4 4 0 100-8 4 4 0 000 8zm0 9s-6-4.35-6-9a6 6 0 1112 0c0 4.65-6 9-6 9z" />
     </svg>
   );
-} 
+}
