@@ -1,16 +1,17 @@
-import "./global.css";
+import "./globals.css";
+import ChatAssistant from "../components/ChatAssistant";
 
 export const metadata = {
-  title: "Nikhil Pesala - Portfolio",
-  description: "DevOps & Cloud Engineer | B.Tech CS Student at VIT Chennai",
+  title: "Nikhil Pesala | AI • DevOps • Cloud",
+  description: "AI-powered portfolio built with Next.js, n8n & Groq",
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body>
+      <body className="bg-[#0b0b0f] text-gray-200 antialiased">
         {children}
-        {/* Removed old n8n ChatWidget to prevent duplicate bubbles */}
+        <ChatAssistant />
       </body>
     </html>
   );
