@@ -1,14 +1,18 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "Nikhil Pesala | Portfolio",
-  description: "DevOps • Cloud • AI Engineer",
+  title: "Nikhil Pesala | Computer Science Engineer",
+  description: "DevOps, Cloud, AI/ML Engineer",
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className="antialiased">{children}</body>
+      <body>
+        <main className="max-w-5xl mx-auto px-6">
+          {children}
+        </main>
+      </body>
     </html>
   );
 }
