@@ -768,4 +768,4 @@ function LocationIcon() {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11a4 4 0 100-8 4 4 0 000 8zm0 9s-6-4.35-6-9a6 6 0 1112 0c0 4.65-6 9-6 9z" />
     </svg>
   );
-}  update this
+}
