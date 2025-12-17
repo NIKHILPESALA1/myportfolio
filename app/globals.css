@@ -2,35 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Smooth scrolling */
 html {
   scroll-behavior: smooth;
 }
 
+/* Premium soft background */
 body {
-  @apply bg-[#0b0f19] text-gray-200 antialiased;
+  background: radial-gradient(
+    circle at top,
+    #f8fafc 0%,
+    #f1f5f9 35%,
+    #e5e7eb 100%
+  );
+  color: #0f172a;
 }
 
-/* Typography */
-h1, h2, h3 {
-  @apply text-white tracking-tight;
+/* Scrollbar (optional but premium) */
+::-webkit-scrollbar {
+  width: 8px;
 }
-
-/* Subtle section spacing */
-section {
-  @apply py-24;
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
 }
-
-/* Card system */
-.card {
-  @apply bg-[#111827] border border-gray-800 rounded-xl p-6
-         transition-all duration-300;
-}
-
-.card:hover {
-  @apply border-indigo-500/40;
-}
-
-/* Accent */
-.gradient-text {
-  @apply bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent;
+::-webkit-scrollbar-track {
+  background: transparent;
 }
