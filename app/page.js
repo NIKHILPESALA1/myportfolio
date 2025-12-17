@@ -134,26 +134,48 @@ function ChatAssistant() {
   const dragOffset = useRef({ offsetX: 0, offsetY: 0 });
   const isDragging = useRef(false);
 
+  const CHAT_WIDTH = 420;
+  const CHAT_HEIGHT = 520;
+
   // Auto-scroll
   useEffect(() => {
-    const c = scrollRef.current;
-    if (c) c.scrollTop = c.scrollHeight;
+    scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight);
   }, [messages, loading]);
+
+  // 🔒 Clamp chat inside viewport
+  const clampPosition = (x, y) => {
+    const maxX = window.innerWidth - CHAT_WIDTH - 10;
+    const maxY = window.innerHeight - CHAT_HEIGHT - 10;
+
+    return {
+      x: Math.max(10, Math.min(x, maxX)),
+      y: Math.max(10, Math.min(y, maxY)),
+    };
+  };
+
+  // ✅ Set safe position when opening
+  useEffect(() => {
+    if (isOpen && chatRef.current) {
+      const initialX = window.innerWidth - CHAT_WIDTH - 20;
+      const initialY = window.innerHeight - CHAT_HEIGHT - 100;
+
+      const { x, y } = clampPosition(initialX, initialY);
+
+      chatRef.current.style.left = `${x}px`;
+      chatRef.current.style.top = `${y}px`;
+      chatRef.current.style.right = "auto";
+      chatRef.current.style.bottom = "auto";
+    }
+  }, [isOpen]);
 
   // Drag start
   const startDrag = (e) => {
     if (!chatRef.current) return;
-
     isDragging.current = true;
 
     const rect = chatRef.current.getBoundingClientRect();
     dragOffset.current.offsetX = e.clientX - rect.left;
     dragOffset.current.offsetY = e.clientY - rect.top;
-
-    chatRef.current.style.left = `${rect.left}px`;
-    chatRef.current.style.top = `${rect.top}px`;
-    chatRef.current.style.right = "auto";
-    chatRef.current.style.bottom = "auto";
 
     document.addEventListener("mousemove", moveDrag);
     document.addEventListener("mouseup", stopDrag);
@@ -162,12 +184,10 @@ function ChatAssistant() {
   const moveDrag = (e) => {
     if (!isDragging.current || !chatRef.current) return;
 
-    let x = e.clientX - dragOffset.current.offsetX;
-    let y = e.clientY - dragOffset.current.offsetY;
+    const rawX = e.clientX - dragOffset.current.offsetX;
+    const rawY = e.clientY - dragOffset.current.offsetY;
 
-    // Prevent dragging outside viewport
-    x = Math.max(10, Math.min(window.innerWidth - 350, x));
-    y = Math.max(10, Math.min(window.innerHeight - 100, y));
+    const { x, y } = clampPosition(rawX, rawY);
 
     chatRef.current.style.left = `${x}px`;
     chatRef.current.style.top = `${y}px`;
@@ -179,12 +199,13 @@ function ChatAssistant() {
     document.removeEventListener("mouseup", stopDrag);
   };
 
+  // Send message
   const sendMessage = async (preset) => {
     const text = preset || input;
     if (!text.trim()) return;
 
-    setMessages((prev) => [...prev, { role: "user", content: text }]);
-    if (!preset) setInput("");
+    setMessages((p) => [...p, { role: "user", content: text }]);
+    setInput("");
     setLoading(true);
 
     try {
@@ -197,20 +218,11 @@ function ChatAssistant() {
         }
       );
 
-      let data;
-      try {
-        data = await res.json();
-      } catch {
-        data = { reply: await res.text() };
-      }
-
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: data?.reply ?? "No response." },
-      ]);
+      const data = await res.json();
+      setMessages((p) => [...p, { role: "assistant", content: data.reply }]);
     } catch {
-      setMessages((prev) => [
-        ...prev,
+      setMessages((p) => [
+        ...p,
         { role: "assistant", content: "⚠️ Error contacting assistant." },
       ]);
     }
@@ -218,131 +230,61 @@ function ChatAssistant() {
     setLoading(false);
   };
 
-  const handleKey = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  };
-
-  const quickPrompts = [
-    "Tell me about Nikhil's projects",
-    "What skills does Nikhil have?",
-    "Is Nikhil suitable for cloud or DevOps roles?",
-    "Give a summary of his resume",
-  ];
-
   return (
     <>
       {/* Floating Button */}
       <button
-        onClick={() => setIsOpen((p) => !p)}
-        className="fixed bottom-8 right-8 bg-gray-900 text-white p-4 rounded-full shadow-xl hover:scale-110 transition animate-bounce-slow z-[999999]"
+        onClick={() => setIsOpen((o) => !o)}
+        className="fixed bottom-8 right-8 z-[999999]
+        bg-gray-900 text-white p-4 rounded-full
+        shadow-xl hover:scale-110 transition animate-bounce-slow"
       >
         💬
       </button>
 
-      {/* CHAT WINDOW */}
+      {/* Chat Window */}
       {isOpen && (
         <div
           ref={chatRef}
-          className="
-            fixed
-            bottom-28 right-8
-            w-[420px]
-            max-h-[80vh]
-            bg-white/90 backdrop-blur-xl
-            border border-gray-300 rounded-2xl shadow-2xl
-            p-5 flex flex-col
-            overflow-hidden
-            animate-fadeInSlow
-            chat-panel-mobile
-            z-[999999]
-          "
+          className="fixed w-[420px] h-[520px]
+          bg-white/90 backdrop-blur-xl
+          border border-gray-300 rounded-2xl
+          shadow-2xl p-4 flex flex-col
+          z-[999999]"
         >
           {/* Header */}
           <div
             onMouseDown={startDrag}
-            className="cursor-move flex justify-between items-center pb-3 border-b border-gray-300"
+            className="cursor-move flex justify-between items-center
+            pb-2 border-b"
           >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gray-900 text-white rounded-full flex items-center justify-center">
+            <div className="flex gap-2 items-center">
+              <div className="w-9 h-9 bg-gray-900 text-white rounded-full flex items-center justify-center">
                 🤖
               </div>
               <div>
-                <h3 className="text-lg font-semibold">AI Assistant</h3>
-                <p className="text-xs text-gray-500">Ask anything about Nikhil</p>
+                <h3 className="font-semibold">AI Assistant</h3>
+                <p className="text-xs text-gray-500">Ask about Nikhil</p>
               </div>
             </div>
-            <button
-              onClick={() => setIsOpen(false)}
-              className="text-gray-500 hover:text-gray-700 text-xl"
-            >
-              ×
-            </button>
+            <button onClick={() => setIsOpen(false)}>×</button>
           </div>
 
-          {/* Quick Prompts */}
-          {messages.length === 0 && (
-            <div className="my-4">
-              <p className="text-sm text-gray-600 mb-2">Try asking:</p>
-              <div className="grid gap-2">
-                {quickPrompts.map((p, i) => (
-                  <button
-                    key={i}
-                    onClick={() => sendMessage(p)}
-                    className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-md text-left"
-                  >
-                    {p}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Messages */}
-          <div
-            ref={scrollRef}
-            className="flex-1 min-h-0 overflow-y-auto pr-2 space-y-3 py-2"
-          >
+          <div ref={scrollRef} className="flex-1 overflow-y-auto py-3 space-y-3">
             {messages.map((m, i) => (
-              <div key={i} className={`flex items-start gap-3 ${m.role === "user" ? "justify-end" : ""}`}>
-                {m.role === "assistant" && (
-                  <div className="w-9 h-9 bg-gray-900 rounded-full text-white flex items-center justify-center">
-                    🤖
-                  </div>
-                )}
-
-                <div
-                  className={`p-3 rounded-xl max-w-[75%] ${
-                    m.role === "user" ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-900"
-                  }`}
-                >
-                  {m.content}
-                </div>
-
-                {m.role === "user" && (
-                  <div className="w-9 h-9 bg-blue-600 rounded-full text-white flex items-center justify-center">
-                    🧑
-                  </div>
-                )}
+              <div
+                key={i}
+                className={`max-w-[75%] p-3 rounded-xl ${
+                  m.role === "user"
+                    ? "ml-auto bg-gray-900 text-white"
+                    : "bg-gray-100"
+                }`}
+              >
+                {m.content}
               </div>
             ))}
-
-            {loading && (
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-gray-900 text-white rounded-full flex items-center justify-center">
-                  🤖
-                </div>
-                <div className="px-3 py-2 bg-gray-200 rounded-xl">
-                  <span className="typing-dots">
-                    <span className="dot"></span>
-                    <span className="dot"></span>
-                    <span className="dot"></span>
-                  </span>
-                </div>
-              </div>
-            )}
+            {loading && <div className="text-sm text-gray-500">Typing…</div>}
           </div>
 
           {/* Input */}
@@ -350,14 +292,14 @@ function ChatAssistant() {
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKey}
+              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
               rows={1}
-              className="flex-grow p-3 border border-gray-300 rounded-xl resize-none focus:ring-2 focus:ring-gray-800 outline-none"
-              placeholder="Ask something… (Enter to send)"
+              className="flex-grow p-2 border rounded-xl resize-none"
+              placeholder="Ask something…"
             />
             <button
               onClick={() => sendMessage()}
-              className="px-5 py-2 bg-gray-900 text-white rounded-xl hover:bg-gray-700 shadow"
+              className="px-4 bg-gray-900 text-white rounded-xl"
             >
               Send
             </button>
