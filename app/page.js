@@ -111,7 +111,12 @@ export default function PortfolioHome() {
         {currentPage === "contact" && <ContactPage />}
       </div>
 
-
+      {/* FOOTER */}
+      <footer className="py-8 px-8 border-t border-gray-200">
+        <div className="max-w-3xl mx-auto text-center text-sm text-gray-600">
+          <p>© 2024 Nikhil Pesala. All rights reserved.</p>
+        </div>
+      </footer>
 
       {/* FLOATING AI CHAT ASSISTANT */}
       <ChatAssistant />
@@ -134,48 +139,26 @@ function ChatAssistant() {
   const dragOffset = useRef({ offsetX: 0, offsetY: 0 });
   const isDragging = useRef(false);
 
-  const CHAT_WIDTH = 420;
-  const CHAT_HEIGHT = 520;
-
   // Auto-scroll
   useEffect(() => {
-    scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight);
+    const c = scrollRef.current;
+    if (c) c.scrollTop = c.scrollHeight;
   }, [messages, loading]);
-
-  // 🔒 Clamp chat inside viewport
-  const clampPosition = (x, y) => {
-    const maxX = window.innerWidth - CHAT_WIDTH - 10;
-    const maxY = window.innerHeight - CHAT_HEIGHT - 10;
-
-    return {
-      x: Math.max(10, Math.min(x, maxX)),
-      y: Math.max(10, Math.min(y, maxY)),
-    };
-  };
-
-  // ✅ Set safe position when opening
-  useEffect(() => {
-    if (isOpen && chatRef.current) {
-      const initialX = window.innerWidth - CHAT_WIDTH - 20;
-      const initialY = window.innerHeight - CHAT_HEIGHT - 100;
-
-      const { x, y } = clampPosition(initialX, initialY);
-
-      chatRef.current.style.left = `${x}px`;
-      chatRef.current.style.top = `${y}px`;
-      chatRef.current.style.right = "auto";
-      chatRef.current.style.bottom = "auto";
-    }
-  }, [isOpen]);
 
   // Drag start
   const startDrag = (e) => {
     if (!chatRef.current) return;
+
     isDragging.current = true;
 
     const rect = chatRef.current.getBoundingClientRect();
     dragOffset.current.offsetX = e.clientX - rect.left;
     dragOffset.current.offsetY = e.clientY - rect.top;
+
+    chatRef.current.style.left = `${rect.left}px`;
+    chatRef.current.style.top = `${rect.top}px`;
+    chatRef.current.style.right = "auto";
+    chatRef.current.style.bottom = "auto";
 
     document.addEventListener("mousemove", moveDrag);
     document.addEventListener("mouseup", stopDrag);
@@ -184,10 +167,12 @@ function ChatAssistant() {
   const moveDrag = (e) => {
     if (!isDragging.current || !chatRef.current) return;
 
-    const rawX = e.clientX - dragOffset.current.offsetX;
-    const rawY = e.clientY - dragOffset.current.offsetY;
+    let x = e.clientX - dragOffset.current.offsetX;
+    let y = e.clientY - dragOffset.current.offsetY;
 
-    const { x, y } = clampPosition(rawX, rawY);
+    // Prevent dragging outside viewport
+    x = Math.max(10, Math.min(window.innerWidth - 350, x));
+    y = Math.max(10, Math.min(window.innerHeight - 100, y));
 
     chatRef.current.style.left = `${x}px`;
     chatRef.current.style.top = `${y}px`;
@@ -199,13 +184,12 @@ function ChatAssistant() {
     document.removeEventListener("mouseup", stopDrag);
   };
 
-  // Send message
   const sendMessage = async (preset) => {
     const text = preset || input;
     if (!text.trim()) return;
 
-    setMessages((p) => [...p, { role: "user", content: text }]);
-    setInput("");
+    setMessages((prev) => [...prev, { role: "user", content: text }]);
+    if (!preset) setInput("");
     setLoading(true);
 
     try {
@@ -218,11 +202,20 @@ function ChatAssistant() {
         }
       );
 
-      const data = await res.json();
-      setMessages((p) => [...p, { role: "assistant", content: data.reply }]);
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        data = { reply: await res.text() };
+      }
+
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: data?.reply ?? "No response." },
+      ]);
     } catch {
-      setMessages((p) => [
-        ...p,
+      setMessages((prev) => [
+        ...prev,
         { role: "assistant", content: "⚠️ Error contacting assistant." },
       ]);
     }
@@ -230,61 +223,131 @@ function ChatAssistant() {
     setLoading(false);
   };
 
+  const handleKey = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
+
+  const quickPrompts = [
+    "Tell me about Nikhil's projects",
+    "What skills does Nikhil have?",
+    "Is Nikhil suitable for cloud or DevOps roles?",
+    "Give a summary of his resume",
+  ];
+
   return (
     <>
       {/* Floating Button */}
       <button
-        onClick={() => setIsOpen((o) => !o)}
-        className="fixed bottom-8 right-8 z-[999999]
-        bg-gray-900 text-white p-4 rounded-full
-        shadow-xl hover:scale-110 transition animate-bounce-slow"
+        onClick={() => setIsOpen((p) => !p)}
+        className="fixed bottom-8 right-8 bg-gray-900 text-white p-4 rounded-full shadow-xl hover:scale-110 transition animate-bounce-slow z-[999999]"
       >
         💬
       </button>
 
-      {/* Chat Window */}
+      {/* CHAT WINDOW */}
       {isOpen && (
         <div
           ref={chatRef}
-          className="fixed w-[420px] h-[520px]
-          bg-white/90 backdrop-blur-xl
-          border border-gray-300 rounded-2xl
-          shadow-2xl p-4 flex flex-col
-          z-[999999]"
+          className="
+            fixed
+            bottom-28 right-8
+            w-[420px]
+            max-h-[80vh]
+            bg-white/90 backdrop-blur-xl
+            border border-gray-300 rounded-2xl shadow-2xl
+            p-5 flex flex-col
+            overflow-hidden
+            animate-fadeInSlow
+            chat-panel-mobile
+            z-[999999]
+          "
         >
           {/* Header */}
           <div
             onMouseDown={startDrag}
-            className="cursor-move flex justify-between items-center
-            pb-2 border-b"
+            className="cursor-move flex justify-between items-center pb-3 border-b border-gray-300"
           >
-            <div className="flex gap-2 items-center">
-              <div className="w-9 h-9 bg-gray-900 text-white rounded-full flex items-center justify-center">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gray-900 text-white rounded-full flex items-center justify-center">
                 🤖
               </div>
               <div>
-                <h3 className="font-semibold">AI Assistant</h3>
-                <p className="text-xs text-gray-500">Ask about Nikhil</p>
+                <h3 className="text-lg font-semibold">AI Assistant</h3>
+                <p className="text-xs text-gray-500">Ask anything about Nikhil</p>
               </div>
             </div>
-            <button onClick={() => setIsOpen(false)}>×</button>
+            <button
+              onClick={() => setIsOpen(false)}
+              className="text-gray-500 hover:text-gray-700 text-xl"
+            >
+              ×
+            </button>
           </div>
 
+          {/* Quick Prompts */}
+          {messages.length === 0 && (
+            <div className="my-4">
+              <p className="text-sm text-gray-600 mb-2">Try asking:</p>
+              <div className="grid gap-2">
+                {quickPrompts.map((p, i) => (
+                  <button
+                    key={i}
+                    onClick={() => sendMessage(p)}
+                    className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-md text-left"
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Messages */}
-          <div ref={scrollRef} className="flex-1 overflow-y-auto py-3 space-y-3">
+          <div
+            ref={scrollRef}
+            className="flex-1 min-h-0 overflow-y-auto pr-2 space-y-3 py-2"
+          >
             {messages.map((m, i) => (
-              <div
-                key={i}
-                className={`max-w-[75%] p-3 rounded-xl ${
-                  m.role === "user"
-                    ? "ml-auto bg-gray-900 text-white"
-                    : "bg-gray-100"
-                }`}
-              >
-                {m.content}
+              <div key={i} className={`flex items-start gap-3 ${m.role === "user" ? "justify-end" : ""}`}>
+                {m.role === "assistant" && (
+                  <div className="w-9 h-9 bg-gray-900 rounded-full text-white flex items-center justify-center">
+                    🤖
+                  </div>
+                )}
+
+                <div
+                  className={`p-3 rounded-xl max-w-[75%] ${
+                    m.role === "user" ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-900"
+                  }`}
+                >
+                  {m.content}
+                </div>
+
+                {m.role === "user" && (
+                  <div className="w-9 h-9 bg-blue-600 rounded-full text-white flex items-center justify-center">
+                    🧑
+                  </div>
+                )}
               </div>
             ))}
-            {loading && <div className="text-sm text-gray-500">Typing…</div>}
+
+            {loading && (
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 bg-gray-900 text-white rounded-full flex items-center justify-center">
+                  🤖
+                </div>
+                <div className="px-3 py-2 bg-gray-200 rounded-xl">
+                  <span className="typing-dots">
+                    <span className="dot"></span>
+                    <span className="dot"></span>
+                    <span className="dot"></span>
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Input */}
@@ -292,14 +355,14 @@ function ChatAssistant() {
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+              onKeyDown={handleKey}
               rows={1}
-              className="flex-grow p-2 border rounded-xl resize-none"
-              placeholder="Ask something…"
+              className="flex-grow p-3 border border-gray-300 rounded-xl resize-none focus:ring-2 focus:ring-gray-800 outline-none"
+              placeholder="Ask something… (Enter to send)"
             />
             <button
               onClick={() => sendMessage()}
-              className="px-4 bg-gray-900 text-white rounded-xl"
+              className="px-5 py-2 bg-gray-900 text-white rounded-xl hover:bg-gray-700 shadow"
             >
               Send
             </button>
@@ -309,7 +372,6 @@ function ChatAssistant() {
     </>
   );
 }
-
 
 //////////////////////////////////////////////////////////
 //                   HOME PAGE                          //
@@ -706,4 +768,4 @@ function LocationIcon() {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11a4 4 0 100-8 4 4 0 000 8zm0 9s-6-4.35-6-9a6 6 0 1112 0c0 4.65-6 9-6 9z" />
     </svg>
   );
-}
+}  update this
