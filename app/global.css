@@ -2,106 +2,32 @@
 @tailwind components;
 @tailwind utilities;
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes slideRight {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes slideLeft {
-  from {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-.animate-fadeIn {
-  animation: fadeIn 0.6s ease-out forwards;
-}
-
-.animate-slideDown {
-  animation: slideDown 0.6s ease-out forwards;
-}
-
-.animate-slideRight {
-  animation: slideRight 0.6s ease-out forwards;
-}
-
-.animate-slideLeft {
-  animation: slideLeft 0.6s ease-out forwards;
-}
-@keyframes fadeInSlow {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.animate-fadeInSlow {
-  animation: fadeInSlow 0.5s ease-out forwards;
-}
-
-@keyframes bounceSlow {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-4px); }
-}
-
-.animate-bounce-slow {
-  animation: bounceSlow 2.5s infinite ease-in-out;
-}
-
-.typing-dots .dot {
+/* Scrollbar */
+::-webkit-scrollbar {
   width: 6px;
-  height: 6px;
-  background: gray;
-  border-radius: 50%;
-  animation: blink 1.4s infinite both;
+}
+::-webkit-scrollbar-thumb {
+  background: #7c3aed;
+  border-radius: 10px;
 }
 
-.typing-dots .dot:nth-child(2) {
-  animation-delay: 0.2s;
-}
-.typing-dots .dot:nth-child(3) {
-  animation-delay: 0.4s;
+/* Fade animation */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-@keyframes blink {
-  0% { opacity: .2; }
-  20% { opacity: 1; }
-  100% { opacity: .2; }
+.animate-fadeUp {
+  animation: fadeUp 0.5s ease-out forwards;
 }
