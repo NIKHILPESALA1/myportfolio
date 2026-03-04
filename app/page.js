@@ -1,9 +1,9 @@
 'use client';
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 
 /**
  * Full portfolio page with expanded About, Projects, Skills, Contact
- * and the upgraded draggable ChatAssistant integrated.
+ * and Flowise embedded chat assistant integrated.
  *
  * Paste this whole file into your Next.js page (e.g. app/page.jsx) and it should run.
  * Make sure Tailwind CSS is enabled in your project for the classes to work.
@@ -129,18 +129,28 @@ export default function PortfolioHome() {
 //////////////////////////////////////////////////////////
 
 function ChatAssistant() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const chatRef = useRef(null);
-  const scrollRef = useRef(null);
-  const dragOffset = useRef({ offsetX: 0, offsetY: 0 });
-  const isDragging = useRef(false);
-
-  // Auto-scroll
   useEffect(() => {
+    const script = document.createElement("script");
+    script.type = "module";
+
+    const flowiseChatflowId =
+      process.env.NEXT_PUBLIC_FLOWISE_CHATFLOW_ID || "71a8880f-d168-4873-9740-1081d9d8865d";
+    const flowiseApiHost =
+      process.env.NEXT_PUBLIC_FLOWISE_API_HOST || "https://your-flowise-host.com";
+
+    script.textContent = [
+      'import Chatbot from "https://cdn.jsdelivr.net/npm/flowise-embed/dist/web.js";',
+      `Chatbot.init({ chatflowid: ${JSON.stringify(flowiseChatflowId)}, apiHost: ${JSON.stringify(flowiseApiHost)} });`,
+    ].join("\n");
+
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+      const bubble = document.querySelector("flowise-chatbot");
+      if (bubble) bubble.remove();
+    };
+  }, []);
     const c = scrollRef.current;
     if (c) c.scrollTop = c.scrollHeight;
   }, [messages, loading]);
@@ -368,27 +378,7 @@ function ChatAssistant() {
             )}
           </div>
 
-          {/* Input */}
-          <div className="flex gap-2 pt-2">
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKey}
-              rows={1}
-              className="flex-grow p-3 border border-gray-300 rounded-xl resize-none focus:ring-2 focus:ring-gray-800 outline-none"
-              placeholder="Ask something… (Enter to send)"
-            />
-            <button
-              onClick={() => sendMessage()}
-              className="px-5 py-2 bg-gray-900 text-white rounded-xl hover:bg-gray-700 shadow"
-            >
-              Send
-            </button>
-          </div>
-        </div>
-      )}
-    </>
-  );
+  return null;
 }
 
 //////////////////////////////////////////////////////////
