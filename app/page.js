@@ -193,10 +193,14 @@ function ChatAssistant() {
     setLoading(true);
 
     try {
-      const res = await fetch(flowiseEndpoint, {
+      const res = await fetch(assistantEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: text }),
+        body: JSON.stringify({
+          question: text,
+          userMessage: text,
+          query: text,
+        }),
       });
 
       if (!res.ok) {
@@ -211,7 +215,7 @@ function ChatAssistant() {
       }
 
       const assistantReply =
-        data?.text || data?.answer || data?.output || data?.response || "No response.";
+        data?.reply || data?.text || data?.output || data?.answer || "No response.";
 
       setMessages((prev) => [...prev, { role: "assistant", content: assistantReply }]);
     } catch {
@@ -220,7 +224,7 @@ function ChatAssistant() {
         {
           role: "assistant",
           content:
-            "⚠️ Error contacting assistant. Set NEXT_PUBLIC_FLOWISE_PREDICTION_URL to your Flowise prediction endpoint.",
+            "⚠️ Error contacting assistant. Add your Flowise endpoint in NEXT_PUBLIC_ASSISTANT_WEBHOOK.",
         },
       ]);
     }
@@ -242,9 +246,9 @@ function ChatAssistant() {
     "Give a summary of his resume",
   ];
 
-  const flowiseEndpoint =
-    process.env.NEXT_PUBLIC_FLOWISE_PREDICTION_URL ||
-    "http://localhost:3000/api/v1/prediction/71a8880f-d168-4873-9740-1081d9d8865d";
+  const assistantEndpoint =
+    process.env.NEXT_PUBLIC_ASSISTANT_WEBHOOK ||
+    "https://your-flowise-instance/api/v1/prediction/replace-with-chatflow-id";
 
   return (
     <>
