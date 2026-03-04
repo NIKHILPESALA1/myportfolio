@@ -222,7 +222,7 @@ function ChatAssistant() {
     } catch (error) {
       const errorText = error?.message || "Unknown error";
       const guidance =
-        "Set NEXT_PUBLIC_FLOWISE_PREDICTION_URL to your deployed Flowise prediction endpoint.";
+        "Set NEXT_PUBLIC_FLOWISE_PREDICTION_URL to override the default Flowise prediction endpoint.";
 
       setMessages((prev) => [
         ...prev,
@@ -250,7 +250,9 @@ function ChatAssistant() {
     "Give a summary of his resume",
   ];
 
-  const flowiseEndpoint = process.env.NEXT_PUBLIC_FLOWISE_PREDICTION_URL;
+  const flowiseEndpoint =
+    process.env.NEXT_PUBLIC_FLOWISE_PREDICTION_URL ||
+    "http://localhost:3000/api/v1/prediction/71a8880f-d168-4873-9740-1081d9d8865d";
 
   return (
     <>
