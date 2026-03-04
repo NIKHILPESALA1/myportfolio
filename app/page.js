@@ -1,9 +1,9 @@
 'use client';
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 
 /**
  * Full portfolio page with expanded About, Projects, Skills, Contact
- * and the upgraded draggable ChatAssistant integrated.
+ * and Flowise embedded chat assistant integrated.
  *
  * Paste this whole file into your Next.js page (e.g. app/page.jsx) and it should run.
  * Make sure Tailwind CSS is enabled in your project for the classes to work.
@@ -129,18 +129,22 @@ export default function PortfolioHome() {
 //////////////////////////////////////////////////////////
 
 function ChatAssistant() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const chatRef = useRef(null);
-  const scrollRef = useRef(null);
-  const dragOffset = useRef({ offsetX: 0, offsetY: 0 });
-  const isDragging = useRef(false);
-
-  // Auto-scroll
   useEffect(() => {
+    const script = document.createElement("script");
+    script.type = "module";
+
+    const flowiseChatflowId =
+      process.env.NEXT_PUBLIC_FLOWISE_CHATFLOW_ID || "71a8880f-d168-4873-9740-1081d9d8865d";
+    const flowiseApiHost =
+      process.env.NEXT_PUBLIC_FLOWISE_API_HOST || "https://your-flowise-host.com";
+
+    script.textContent = `
+      import Chatbot from "https://cdn.jsdelivr.net/npm/flowise-embed/dist/web.js";
+      Chatbot.init({
+        chatflowid: "${flowiseChatflowId}",
+        apiHost: "${flowiseApiHost}",
+      });
+    `;
     const c = scrollRef.current;
     if (c) c.scrollTop = c.scrollHeight;
   }, [messages, loading]);
@@ -305,90 +309,16 @@ function ChatAssistant() {
             </button>
           </div>
 
-          {/* Quick Prompts */}
-          {messages.length === 0 && (
-            <div className="my-4">
-              <p className="text-sm text-gray-600 mb-2">Try asking:</p>
-              <div className="grid gap-2">
-                {quickPrompts.map((p, i) => (
-                  <button
-                    key={i}
-                    onClick={() => sendMessage(p)}
-                    className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-md text-left"
-                  >
-                    {p}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+    document.body.appendChild(script);
 
-          {/* Messages */}
-          <div
-            ref={scrollRef}
-            className="flex-1 min-h-0 overflow-y-auto pr-2 space-y-3 py-2"
-          >
-            {messages.map((m, i) => (
-              <div key={i} className={`flex items-start gap-3 ${m.role === "user" ? "justify-end" : ""}`}>
-                {m.role === "assistant" && (
-                  <div className="w-9 h-9 bg-gray-900 rounded-full text-white flex items-center justify-center">
-                    🤖
-                  </div>
-                )}
+    return () => {
+      document.body.removeChild(script);
+      const bubble = document.querySelector("flowise-chatbot");
+      if (bubble) bubble.remove();
+    };
+  }, []);
 
-                <div
-                  className={`p-3 rounded-xl max-w-[75%] ${
-                    m.role === "user" ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-900"
-                  }`}
-                >
-                  {m.content}
-                </div>
-
-                {m.role === "user" && (
-                  <div className="w-9 h-9 bg-blue-600 rounded-full text-white flex items-center justify-center">
-                    🧑
-                  </div>
-                )}
-              </div>
-            ))}
-
-            {loading && (
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-gray-900 text-white rounded-full flex items-center justify-center">
-                  🤖
-                </div>
-                <div className="px-3 py-2 bg-gray-200 rounded-xl">
-                  <span className="typing-dots">
-                    <span className="dot"></span>
-                    <span className="dot"></span>
-                    <span className="dot"></span>
-                  </span>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Input */}
-          <div className="flex gap-2 pt-2">
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKey}
-              rows={1}
-              className="flex-grow p-3 border border-gray-300 rounded-xl resize-none focus:ring-2 focus:ring-gray-800 outline-none"
-              placeholder="Ask something… (Enter to send)"
-            />
-            <button
-              onClick={() => sendMessage()}
-              className="px-5 py-2 bg-gray-900 text-white rounded-xl hover:bg-gray-700 shadow"
-            >
-              Send
-            </button>
-          </div>
-        </div>
-      )}
-    </>
-  );
+  return null;
 }
 
 //////////////////////////////////////////////////////////
