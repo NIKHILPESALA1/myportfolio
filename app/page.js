@@ -193,30 +193,35 @@ function ChatAssistant() {
     setLoading(true);
 
     try {
-      const res = await fetch(
-        "https://kundu.app.n8n.cloud/webhook/portfolio-assistant",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userMessage: text }),
-        }
-      );
+      const res = await fetch(flowiseEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: text }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Request failed with status ${res.status}`);
+      }
 
       let data;
       try {
         data = await res.json();
       } catch {
-        data = { reply: await res.text() };
+        data = { text: await res.text() };
       }
 
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: data?.reply ?? "No response." },
-      ]);
+      const assistantReply =
+        data?.text || data?.answer || data?.output || data?.response || "No response.";
+
+      setMessages((prev) => [...prev, { role: "assistant", content: assistantReply }]);
     } catch {
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: "⚠️ Error contacting assistant." },
+        {
+          role: "assistant",
+          content:
+            "⚠️ Error contacting assistant. Set NEXT_PUBLIC_FLOWISE_PREDICTION_URL to your Flowise prediction endpoint.",
+        },
       ]);
     }
 
@@ -236,6 +241,10 @@ function ChatAssistant() {
     "Is Nikhil suitable for cloud or DevOps roles?",
     "Give a summary of his resume",
   ];
+
+  const flowiseEndpoint =
+    process.env.NEXT_PUBLIC_FLOWISE_PREDICTION_URL ||
+    "http://localhost:3000/api/v1/prediction/71a8880f-d168-4873-9740-1081d9d8865d";
 
   return (
     <>
