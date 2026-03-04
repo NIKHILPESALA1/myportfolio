@@ -1,9 +1,9 @@
 'use client';
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 
 /**
  * Full portfolio page with expanded About, Projects, Skills, Contact
- * and the upgraded draggable ChatAssistant integrated.
+ * and Flowise embedded chat assistant integrated.
  *
  * Paste this whole file into your Next.js page (e.g. app/page.jsx) and it should run.
  * Make sure Tailwind CSS is enabled in your project for the classes to work.
@@ -129,248 +129,33 @@ export default function PortfolioHome() {
 //////////////////////////////////////////////////////////
 
 function ChatAssistant() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const chatRef = useRef(null);
-  const scrollRef = useRef(null);
-  const dragOffset = useRef({ offsetX: 0, offsetY: 0 });
-  const isDragging = useRef(false);
-
-  // Auto-scroll
   useEffect(() => {
-    const c = scrollRef.current;
-    if (c) c.scrollTop = c.scrollHeight;
-  }, [messages, loading]);
+    const script = document.createElement("script");
+    script.type = "module";
 
-  // Drag start
-  const startDrag = (e) => {
-    if (!chatRef.current) return;
+    const flowiseChatflowId =
+      process.env.NEXT_PUBLIC_FLOWISE_CHATFLOW_ID || "71a8880f-d168-4873-9740-1081d9d8865d";
+    const flowiseApiHost =
+      process.env.NEXT_PUBLIC_FLOWISE_API_HOST || "https://your-flowise-host.com";
 
-    isDragging.current = true;
+    script.textContent = `
+      import Chatbot from "https://cdn.jsdelivr.net/npm/flowise-embed/dist/web.js";
+      Chatbot.init({
+        chatflowid: "${flowiseChatflowId}",
+        apiHost: "${flowiseApiHost}",
+      });
+    `;
 
-    const rect = chatRef.current.getBoundingClientRect();
-    dragOffset.current.offsetX = e.clientX - rect.left;
-    dragOffset.current.offsetY = e.clientY - rect.top;
+    document.body.appendChild(script);
 
-    chatRef.current.style.left = `${rect.left}px`;
-    chatRef.current.style.top = `${rect.top}px`;
-    chatRef.current.style.right = "auto";
-    chatRef.current.style.bottom = "auto";
+    return () => {
+      document.body.removeChild(script);
+      const bubble = document.querySelector("flowise-chatbot");
+      if (bubble) bubble.remove();
+    };
+  }, []);
 
-    document.addEventListener("mousemove", moveDrag);
-    document.addEventListener("mouseup", stopDrag);
-  };
-
-  const moveDrag = (e) => {
-    if (!isDragging.current || !chatRef.current) return;
-
-    let x = e.clientX - dragOffset.current.offsetX;
-    let y = e.clientY - dragOffset.current.offsetY;
-
-    // Prevent dragging outside viewport
-    x = Math.max(10, Math.min(window.innerWidth - 350, x));
-    y = Math.max(10, Math.min(window.innerHeight - 100, y));
-
-    chatRef.current.style.left = `${x}px`;
-    chatRef.current.style.top = `${y}px`;
-  };
-
-  const stopDrag = () => {
-    isDragging.current = false;
-    document.removeEventListener("mousemove", moveDrag);
-    document.removeEventListener("mouseup", stopDrag);
-  };
-
-  const sendMessage = async (preset) => {
-    const text = preset || input;
-    if (!text.trim()) return;
-
-    setMessages((prev) => [...prev, { role: "user", content: text }]);
-    if (!preset) setInput("");
-    setLoading(true);
-
-    try {
-      const res = await fetch(
-        "https://kundu.app.n8n.cloud/webhook/portfolio-assistant",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userMessage: text }),
-        }
-      );
-
-      let data;
-      try {
-        data = await res.json();
-      } catch {
-        data = { reply: await res.text() };
-      }
-
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: data?.reply ?? "No response." },
-      ]);
-    } catch {
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: "⚠️ Error contacting assistant." },
-      ]);
-    }
-
-    setLoading(false);
-  };
-
-  const handleKey = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  };
-
-  const quickPrompts = [
-    "Tell me about Nikhil's projects",
-    "What skills does Nikhil have?",
-    "Is Nikhil suitable for cloud or DevOps roles?",
-    "Give a summary of his resume",
-  ];
-
-  return (
-    <>
-      {/* Floating Button */}
-      <button
-        onClick={() => setIsOpen((p) => !p)}
-        className="fixed bottom-8 right-8 bg-gray-900 text-white p-4 rounded-full shadow-xl hover:scale-110 transition animate-bounce-slow z-[999999]"
-      >
-        💬
-      </button>
-
-      {/* CHAT WINDOW */}
-      {isOpen && (
-        <div
-          ref={chatRef}
-          className="
-            fixed
-            bottom-28 right-8
-            w-[420px]
-            max-h-[80vh]
-            bg-white/90 backdrop-blur-xl
-            border border-gray-300 rounded-2xl shadow-2xl
-            p-5 flex flex-col
-            overflow-hidden
-            animate-fadeInSlow
-            chat-panel-mobile
-            z-[999999]
-          "
-        >
-          {/* Header */}
-          <div
-            onMouseDown={startDrag}
-            className="cursor-move flex justify-between items-center pb-3 border-b border-gray-300"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gray-900 text-white rounded-full flex items-center justify-center">
-                🤖
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold">AI Assistant</h3>
-                <p className="text-xs text-gray-500">Ask anything about Nikhil</p>
-              </div>
-            </div>
-            <button
-              onClick={() => setIsOpen(false)}
-              className="text-gray-500 hover:text-gray-700 text-xl"
-            >
-              ×
-            </button>
-          </div>
-
-          {/* Quick Prompts */}
-          {messages.length === 0 && (
-            <div className="my-4">
-              <p className="text-sm text-gray-600 mb-2">Try asking:</p>
-              <div className="grid gap-2">
-                {quickPrompts.map((p, i) => (
-                  <button
-                    key={i}
-                    onClick={() => sendMessage(p)}
-                    className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-md text-left"
-                  >
-                    {p}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Messages */}
-          <div
-            ref={scrollRef}
-            className="flex-1 min-h-0 overflow-y-auto pr-2 space-y-3 py-2"
-          >
-            {messages.map((m, i) => (
-              <div key={i} className={`flex items-start gap-3 ${m.role === "user" ? "justify-end" : ""}`}>
-                {m.role === "assistant" && (
-                  <div className="w-9 h-9 bg-gray-900 rounded-full text-white flex items-center justify-center">
-                    🤖
-                  </div>
-                )}
-
-                <div
-                  className={`p-3 rounded-xl max-w-[75%] ${
-                    m.role === "user" ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-900"
-                  }`}
-                >
-                  {m.content}
-                </div>
-
-                {m.role === "user" && (
-                  <div className="w-9 h-9 bg-blue-600 rounded-full text-white flex items-center justify-center">
-                    🧑
-                  </div>
-                )}
-              </div>
-            ))}
-
-            {loading && (
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-gray-900 text-white rounded-full flex items-center justify-center">
-                  🤖
-                </div>
-                <div className="px-3 py-2 bg-gray-200 rounded-xl">
-                  <span className="typing-dots">
-                    <span className="dot"></span>
-                    <span className="dot"></span>
-                    <span className="dot"></span>
-                  </span>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Input */}
-          <div className="flex gap-2 pt-2">
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKey}
-              rows={1}
-              className="flex-grow p-3 border border-gray-300 rounded-xl resize-none focus:ring-2 focus:ring-gray-800 outline-none"
-              placeholder="Ask something… (Enter to send)"
-            />
-            <button
-              onClick={() => sendMessage()}
-              className="px-5 py-2 bg-gray-900 text-white rounded-xl hover:bg-gray-700 shadow"
-            >
-              Send
-            </button>
-          </div>
-        </div>
-      )}
-    </>
-  );
+  return null;
 }
 
 //////////////////////////////////////////////////////////
