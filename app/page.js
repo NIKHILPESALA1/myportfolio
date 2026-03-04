@@ -145,6 +145,169 @@ function ChatAssistant() {
         apiHost: "${flowiseApiHost}",
       });
     `;
+    const c = scrollRef.current;
+    if (c) c.scrollTop = c.scrollHeight;
+  }, [messages, loading]);
+
+  // Drag start
+  const startDrag = (e) => {
+    if (!chatRef.current) return;
+
+    isDragging.current = true;
+
+    const rect = chatRef.current.getBoundingClientRect();
+    dragOffset.current.offsetX = e.clientX - rect.left;
+    dragOffset.current.offsetY = e.clientY - rect.top;
+
+    chatRef.current.style.left = `${rect.left}px`;
+    chatRef.current.style.top = `${rect.top}px`;
+    chatRef.current.style.right = "auto";
+    chatRef.current.style.bottom = "auto";
+
+    document.addEventListener("mousemove", moveDrag);
+    document.addEventListener("mouseup", stopDrag);
+  };
+
+  const moveDrag = (e) => {
+    if (!isDragging.current || !chatRef.current) return;
+
+    let x = e.clientX - dragOffset.current.offsetX;
+    let y = e.clientY - dragOffset.current.offsetY;
+
+    // Prevent dragging outside viewport
+    x = Math.max(10, Math.min(window.innerWidth - 350, x));
+    y = Math.max(10, Math.min(window.innerHeight - 100, y));
+
+    chatRef.current.style.left = `${x}px`;
+    chatRef.current.style.top = `${y}px`;
+  };
+
+  const stopDrag = () => {
+    isDragging.current = false;
+    document.removeEventListener("mousemove", moveDrag);
+    document.removeEventListener("mouseup", stopDrag);
+  };
+
+  const sendMessage = async (preset) => {
+    const text = preset || input;
+    if (!text.trim()) return;
+
+    setMessages((prev) => [...prev, { role: "user", content: text }]);
+    if (!preset) setInput("");
+    setLoading(true);
+
+    try {
+      if (!flowiseEndpoint) {
+        throw new Error("MISSING_ENDPOINT");
+      }
+
+      const res = await fetch(flowiseEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: text }),
+      });
+
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        data = { text: await res.text() };
+      }
+
+      if (!res.ok) {
+        const errorMsg = data?.message || data?.error || data?.text || `Request failed with status ${res.status}`;
+        throw new Error(errorMsg);
+      }
+
+      const assistantReply =
+        data?.text || data?.answer || data?.output || data?.response || "No response.";
+
+      setMessages((prev) => [...prev, { role: "assistant", content: assistantReply }]);
+    } catch (error) {
+      const errorText = error?.message || "Unknown error";
+      const guidance =
+        "Set NEXT_PUBLIC_FLOWISE_PREDICTION_URL to override the default Flowise prediction endpoint.";
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: `⚠️ ${errorText}. ${guidance}`,
+        },
+      ]);
+    }
+
+    setLoading(false);
+  };
+
+  const handleKey = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
+
+  const quickPrompts = [
+    "Tell me about Nikhil's projects",
+    "What skills does Nikhil have?",
+    "Is Nikhil suitable for cloud or DevOps roles?",
+    "Give a summary of his resume",
+  ];
+
+  const flowiseEndpoint =
+    process.env.NEXT_PUBLIC_FLOWISE_PREDICTION_URL?.trim() ||
+    process.env.NEXT_PUBLIC_FLOWISE_PREDICTION_URL ||
+    "http://localhost:3000/api/v1/prediction/71a8880f-d168-4873-9740-1081d9d8865d";
+
+  return (
+    <>
+      {/* Floating Button */}
+      <button
+        onClick={() => setIsOpen((p) => !p)}
+        className="fixed bottom-8 right-8 bg-gray-900 text-white p-4 rounded-full shadow-xl hover:scale-110 transition animate-bounce-slow z-[999999]"
+      >
+        💬
+      </button>
+
+      {/* CHAT WINDOW */}
+      {isOpen && (
+        <div
+          ref={chatRef}
+          className="
+            fixed
+            bottom-28 right-8
+            w-[420px]
+            max-h-[80vh]
+            bg-white/90 backdrop-blur-xl
+            border border-gray-300 rounded-2xl shadow-2xl
+            p-5 flex flex-col
+            overflow-hidden
+            animate-fadeInSlow
+            chat-panel-mobile
+            z-[999999]
+          "
+        >
+          {/* Header */}
+          <div
+            onMouseDown={startDrag}
+            className="cursor-move flex justify-between items-center pb-3 border-b border-gray-300"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gray-900 text-white rounded-full flex items-center justify-center">
+                🤖
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold">AI Assistant</h3>
+                <p className="text-xs text-gray-500">Ask anything about Nikhil</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setIsOpen(false)}
+              className="text-gray-500 hover:text-gray-700 text-xl"
+            >
+              ×
+            </button>
+          </div>
 
     document.body.appendChild(script);
 
