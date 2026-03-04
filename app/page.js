@@ -193,6 +193,10 @@ function ChatAssistant() {
     setLoading(true);
 
     try {
+      if (!flowiseEndpoint) {
+        throw new Error("MISSING_ENDPOINT");
+      }
+
       const res = await fetch(flowiseEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -248,6 +252,7 @@ function ChatAssistant() {
 
   const flowiseEndpoint =
     process.env.NEXT_PUBLIC_FLOWISE_PREDICTION_URL?.trim() ||
+    process.env.NEXT_PUBLIC_FLOWISE_PREDICTION_URL ||
     "http://localhost:3000/api/v1/prediction/71a8880f-d168-4873-9740-1081d9d8865d";
 
   return (
