@@ -158,6 +158,15 @@ function ChatAssistant() {
     const script = document.createElement("script");
     script.id = scriptId;
     script.type = "module";
+    const script = document.createElement("script");
+    script.id = scriptId;
+    script.type = "module";
+
+    const flowiseChatflowId =
+      process.env.NEXT_PUBLIC_FLOWISE_CHATFLOW_ID || "71a8880f-d168-4873-9740-1081d9d8865d";
+    const flowiseApiHost =
+      process.env.NEXT_PUBLIC_FLOWISE_API_HOST || "https://your-flowise-host.com";
+
     script.textContent = [
       'import Chatbot from "https://cdn.jsdelivr.net/npm/flowise-embed/dist/web.js";',
       `Chatbot.init({ chatflowid: ${JSON.stringify(flowiseChatflowId)}, apiHost: ${JSON.stringify(flowiseApiHost)} });`,
