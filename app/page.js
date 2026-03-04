@@ -211,7 +211,7 @@ function ChatAssistant() {
       try {
         data = await res.json();
       } catch {
-        data = { reply: await res.text() };
+        data = { text: await res.text() };
       }
 
       const assistantReply =
