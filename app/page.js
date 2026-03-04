@@ -134,15 +134,30 @@ function ChatAssistant() {
     const existingScript = document.getElementById(scriptId);
     if (existingScript) existingScript.remove();
 
+    const predictionUrl = process.env.NEXT_PUBLIC_FLOWISE_PREDICTION_URL?.trim();
+    const apiHostFromPrediction = predictionUrl?.match(/^(https?:\/\/[^/]+)/)?.[1];
+    const chatflowFromPrediction = predictionUrl?.match(/\/prediction\/([^/?#]+)/)?.[1];
+
+    const flowiseChatflowId =
+      process.env.NEXT_PUBLIC_FLOWISE_CHATFLOW_ID?.trim() ||
+      chatflowFromPrediction ||
+      "71a8880f-d168-4873-9740-1081d9d8865d";
+
+    const flowiseApiHost =
+      process.env.NEXT_PUBLIC_FLOWISE_API_HOST?.trim() ||
+      apiHostFromPrediction ||
+      "";
+
+    if (!flowiseApiHost) {
+      console.error(
+        "Flowise embed not initialized: set NEXT_PUBLIC_FLOWISE_API_HOST or NEXT_PUBLIC_FLOWISE_PREDICTION_URL."
+      );
+      return;
+    }
+
     const script = document.createElement("script");
     script.id = scriptId;
     script.type = "module";
-
-    const flowiseChatflowId =
-      process.env.NEXT_PUBLIC_FLOWISE_CHATFLOW_ID || "71a8880f-d168-4873-9740-1081d9d8865d";
-    const flowiseApiHost =
-      process.env.NEXT_PUBLIC_FLOWISE_API_HOST || "https://your-flowise-host.com";
-
     script.textContent = [
       'import Chatbot from "https://cdn.jsdelivr.net/npm/flowise-embed/dist/web.js";',
       `Chatbot.init({ chatflowid: ${JSON.stringify(flowiseChatflowId)}, apiHost: ${JSON.stringify(flowiseApiHost)} });`,
