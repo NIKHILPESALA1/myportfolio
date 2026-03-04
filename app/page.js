@@ -193,19 +193,15 @@ function ChatAssistant() {
     setLoading(true);
 
     try {
-      const res = await fetch(assistantEndpoint, {
+      if (!flowiseEndpoint) {
+        throw new Error("MISSING_ENDPOINT");
+      }
+
+      const res = await fetch(flowiseEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          question: text,
-          userMessage: text,
-          query: text,
-        }),
+        body: JSON.stringify({ question: text }),
       });
-
-      if (!res.ok) {
-        throw new Error(`Request failed with status ${res.status}`);
-      }
 
       let data;
       try {
@@ -214,17 +210,25 @@ function ChatAssistant() {
         data = { text: await res.text() };
       }
 
+      if (!res.ok) {
+        const errorMsg = data?.message || data?.error || data?.text || `Request failed with status ${res.status}`;
+        throw new Error(errorMsg);
+      }
+
       const assistantReply =
-        data?.reply || data?.text || data?.output || data?.answer || "No response.";
+        data?.text || data?.answer || data?.output || data?.response || "No response.";
 
       setMessages((prev) => [...prev, { role: "assistant", content: assistantReply }]);
-    } catch {
+    } catch (error) {
+      const errorText = error?.message || "Unknown error";
+      const guidance =
+        "Set NEXT_PUBLIC_FLOWISE_PREDICTION_URL to your deployed Flowise prediction endpoint.";
+
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content:
-            "⚠️ Error contacting assistant. Add your Flowise endpoint in NEXT_PUBLIC_ASSISTANT_WEBHOOK.",
+          content: `⚠️ ${errorText}. ${guidance}`,
         },
       ]);
     }
@@ -246,9 +250,7 @@ function ChatAssistant() {
     "Give a summary of his resume",
   ];
 
-  const assistantEndpoint =
-    process.env.NEXT_PUBLIC_ASSISTANT_WEBHOOK ||
-    "https://your-flowise-instance/api/v1/prediction/replace-with-chatflow-id";
+  const flowiseEndpoint = process.env.NEXT_PUBLIC_FLOWISE_PREDICTION_URL;
 
   return (
     <>
